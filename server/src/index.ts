@@ -20,8 +20,8 @@ app.use('/api/rooms', roomRoutes);
 
 app.get("/", (req, res) => res.send("Hush Server running!"));
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, async () => {
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
