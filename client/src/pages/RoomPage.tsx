@@ -1,7 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useWebRTC } from "../hooks/useWebRTC";
+import { useWebRTC, type IUser } from "../hooks/useWebRTC";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL;
 
@@ -10,21 +10,19 @@ interface IMessage {
   text: string;
 }
 
-interface IUser {
-  id: string;
-  username: string;
-}
-
 const RoomPage = () => {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [hasJoined, setHasJoined] = useState<boolean>(false);
   const [users, setUsers] = useState<IUser[]>([]);
-  const { localStream, remoteStreams, startLocalStream } = useWebRTC();
-
   const { roomId } = useParams();
   const socketRef = useRef<Socket | null>(null);
+  const { localStream, remoteStreams, startLocalStream } = useWebRTC({
+    socket: socketRef.current,
+    users: users,
+    mySocketId: socketRef.current?.id || null,
+  });
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +107,7 @@ const RoomPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen p-4 justify-between ">
+    <div className="flex flex-col h-screen p-4">
       <div className="flex justify-between items-center mb-4 p-2 bg-gray-100 rounded-lg">
         <div>
           <span className="font-bold">Share this Room Code: </span>
@@ -124,17 +122,22 @@ const RoomPage = () => {
             {users.length} {users.length === 1 ? "Person" : "People"} Online
           </span>
         </div>
-        {!localStream && (
-          <button
-            onClick={startLocalStream}
-            className="mb-4 w-50 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 cursor-pointer "
-          >
-            Join Voice Call
-          </button>
-        )}
       </div>
 
-      <div className="grow border border-gray-300 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">
+      {!localStream && (
+        <button
+          onClick={() => {
+            console.log("Button clicked!");
+            startLocalStream();
+          }}
+          className="mb-4 w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 cursor-pointer"
+        >
+          Join Voice Call
+        </button>
+      )}
+
+      <h1 className="text-2xl font-bold mb-4">Chat:</h1>
+      <div className="flex-grow border border-gray-300 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">
         {messages.map((msg, index) => (
           <div key={index} className="mb-2">
             <strong>
@@ -151,7 +154,7 @@ const RoomPage = () => {
           placeholder="Type your message..."
           value={currentMessage}
           onChange={(e) => setCurrentMessage(e.target.value)}
-          className="grow border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-grow border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           type="submit"
@@ -160,15 +163,27 @@ const RoomPage = () => {
           Send
         </button>
       </form>
-      {localStream &&  (
-        <audio ref={(audio) => {
-          if(audio) audio.srcObject = localStream;
-        }} autoPlay muted/>
+
+      {localStream && (
+        <audio
+          ref={(audio) => {
+            if (audio) audio.srcObject = localStream;
+          }}
+          autoPlay
+          muted
+        />
       )}
-      {Object.values(remoteStreams).map((stream,index) => {
-        <audio key={index} ref={(audio) => {
-          if(audio) audio.srcObject = stream;
-        }} autoPlay/>
+
+      {Object.values(remoteStreams).map((stream, index) => {
+        return (
+          <audio
+            key={index}
+            ref={(audio) => {
+              if (audio) audio.srcObject = stream;
+            }}
+            autoPlay
+          />
+        );
       })}
     </div>
   );

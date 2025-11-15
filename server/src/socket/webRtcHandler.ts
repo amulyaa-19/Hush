@@ -13,10 +13,10 @@ export const registerWebRTCHandlers = (io: Server, socket: Socket) => {
 
   socket.on("webrtc-answer", (data) => {
     const{targetSocketId, answer} = data;
-    socket.to(targetSocketId.emit('webrtc-answer'), {
+    socket.to(targetSocketId).emit('webrtc-answer', {
       senderSocketId: socket.id,
       answer,
-    })
+    });
   });
 
   socket.on('webrtc-ice-candidate', (data) => {
