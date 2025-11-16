@@ -141,7 +141,7 @@ const RoomPage = () => {
       </div>
 
       <h1 className="text-2xl font-bold mb-4 text-white">Chat:</h1>
-      <div className="flex-grow border border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-900">
+      <div className="grow border border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-900">
         {messages.map((msg, index) => (
           <div key={index} className="mb-2">
             <strong
@@ -162,7 +162,7 @@ const RoomPage = () => {
           placeholder="Type your message..."
           value={currentMessage}
           onChange={(e) => setCurrentMessage(e.target.value)}
-          className="flex-grow bg-gray-800 border border-gray-700 text-white rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="grow bg-gray-800 border border-gray-700 text-white rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
         <button
           type="submit"

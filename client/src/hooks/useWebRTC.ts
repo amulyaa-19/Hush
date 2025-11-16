@@ -112,6 +112,12 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
       const { senderSocketId, offer } = data;
       console.log(`Received offer from ${senderSocketId}`);
 
+      const existingConnection = peerConnectionsRef.current[senderSocketId];
+      if (existingConnection && existingConnection.signalingState !== 'stable') {
+        console.warn(`Glare condition detected! Ignoring offer from ${senderSocketId}`);
+        return; // We are already making an offer, so we will ignore this one.
+      }
+
       const peerConnection = new RTCPeerConnection(stunServers);
       peerConnectionsRef.current[senderSocketId] = peerConnection;
 
