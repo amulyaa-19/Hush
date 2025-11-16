@@ -18,6 +18,7 @@ const RoomPage = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const { roomId } = useParams();
   const socketRef = useRef<Socket | null>(null);
+
   const { localStream, remoteStreams, startLocalStream } = useWebRTC({
     socket: socketRef.current,
     users: users,
@@ -72,18 +73,18 @@ const RoomPage = () => {
 
   if (!hasJoined) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <div className="flex h-screen items-center justify-center">
         <form
-          className="bg-white p-8 rounded-lg shadow-md"
+          className="bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md"
           onSubmit={handleJoinRoom}
         >
-          <h1 className="text-2xl font-bold mb-4">Join Room</h1>
+          <h1 className="text-2xl font-bold mb-4 text-white">Join Room</h1>
           <div className="mb-4">
-            <label className="block mb-2 font-bold">Room Code:</label>
-            <span className="font-mono text-lg text-blue-600">{roomId}</span>
+            <label className="block mb-2 font-bold text-gray-300">Room Code:</label>
+            <span className="font-mono text-lg text-teal-400">{roomId}</span>
           </div>
           <div className="mb-4">
-            <label className="block mb-2 font-bold" htmlFor="username">
+            <label className="block mb-2 font-bold text-gray-300" htmlFor="username">
               Enter your username:
             </label>
             <input
@@ -91,13 +92,13 @@ const RoomPage = () => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder="Your name..."
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 cursor-pointer"
+            className="w-full bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-600 cursor-pointer font-semibold"
           >
             Join
           </button>
@@ -108,42 +109,49 @@ const RoomPage = () => {
 
   return (
     <div className="flex flex-col h-screen p-4">
-      <div className="flex justify-between items-center mb-4 p-2 bg-gray-100 rounded-lg">
+      <div className="flex justify-between items-center mb-4 p-2 bg-gray-800 rounded-lg">
         <div>
-          <span className="font-bold">Share this Room Code: </span>
-          <span className="font-mono text-blue-600">{roomId}</span>
+          <span className="font-bold text-gray-200">Share this Room Code: </span>
+          <span className="font-mono text-teal-400">{roomId}</span>
         </div>
+
         <div className="flex items-center">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-          </span>
-          <span className="ml-2 font-bold">
-            {users.length} {users.length === 1 ? "Person" : "People"} Online
-          </span>
+          <div className="flex items-center">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span className="ml-2 font-bold text-gray-200">
+              {users.length} {users.length === 1 ? "Person" : "People"} Online
+            </span>
+          </div>
+
+          {!localStream && (
+            <button
+              onClick={() => {
+                console.log("Button clicked!");
+                startLocalStream();
+              }}
+              className="ml-4 bg-teal-500 text-white p-2 text-sm rounded-lg hover:bg-teal-600 cursor-pointer font-semibold"
+            >
+              Join Voice Call
+            </button>
+          )}
         </div>
       </div>
 
-      {!localStream && (
-        <button
-          onClick={() => {
-            console.log("Button clicked!");
-            startLocalStream();
-          }}
-          className="mb-4 w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 cursor-pointer"
-        >
-          Join Voice Call
-        </button>
-      )}
-
-      <h1 className="text-2xl font-bold mb-4">Chat:</h1>
-      <div className="flex-grow border border-gray-300 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">
+      <h1 className="text-2xl font-bold mb-4 text-white">Chat:</h1>
+      <div className="flex-grow border border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 bg-gray-900">
         {messages.map((msg, index) => (
           <div key={index} className="mb-2">
-            <strong>
+            <strong
+              className={
+                msg.authorName === username ? "text-teal-400" : "text-gray-400"
+              }
+            >
               {msg.authorName === username ? "You" : msg.authorName}
             </strong>
-            : <span>{msg.text}</span>
+            : <span className="text-gray-200">{msg.text}</span>
           </div>
         ))}
       </div>
@@ -154,11 +162,11 @@ const RoomPage = () => {
           placeholder="Type your message..."
           value={currentMessage}
           onChange={(e) => setCurrentMessage(e.target.value)}
-          className="flex-grow border border-gray-300 rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-grow bg-gray-800 border border-gray-700 text-white rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white p-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          className="bg-teal-500 text-white p-2 rounded-r-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer font-semibold"
         >
           Send
         </button>
