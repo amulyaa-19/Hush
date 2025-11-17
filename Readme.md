@@ -4,6 +4,10 @@ This is a simple chat app that lets you create anonymous, private chat rooms. Yo
 
 A key feature of this project is privacy: **messages are not saved in any database**. The server just relays messages and voice. When the last person leaves, the chat is gone forever.
 
+## Screenshots
+
+![Home Page](./screenshots/image1.png)
+![Chat Room Interface](./screenshots/image2.png)
 
 ## Features
 
@@ -37,5 +41,5 @@ This project is built in two parts:
 
 ## What I Learned 
 
-* **Custom WebRTC Hook:** All the complex logic for group voice chat is built into a single, custom React hook (`useWebRTC`). This keeps the main `RoomPage` component clean and easy to read. The hook manages all the `RTCPeerConnection` objects, state for audio streams, and all the signaling logic (offers, answers, etc.).
+* **Custom WebRTC Hook:** All the complex logic for group voice chat is built into a single, custom React hook (`useWebRTC`).The hook manages all the `RTCPeerConnection` objects, state for audio streams, and all the signaling logic (offers, answers, etc.).
 * **Mesh Network:** The group voice chat is a "mesh," meaning every user creates a direct peer-to-peer connection with every other user in the room. The server is only used for "signaling" (to help them find each other).

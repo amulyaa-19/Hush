@@ -38,13 +38,14 @@ const HomePage = () => {
           Hush
         </h1>
         <p className="text-lg text-gray-300 mb-12">
-          one-time end-to-end encrypted anonymous chats
+          one-time end-to-end  anonymous chats
         </p>
 
         <form onSubmit={handleJoinRoom} className="mb-6">
           <label className="text-left block text-gray-300 mb-2">
             Join private chat
           </label>
+          <div className='flex gap-2'>
           <input
             type="text"
             value={joinCode}
@@ -52,6 +53,10 @@ const HomePage = () => {
             placeholder="Enter chat code or link to join..."
             className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
+          <button type='submit' className='bg-teal-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-teal-400 transition-colors cursor-pointer'>
+            Join
+          </button>
+          </div>
         </form>
 
         <div className="flex items-center justify-center mb-6">
@@ -67,7 +72,7 @@ const HomePage = () => {
         </button>
               
         <p className="text-xs text-gray-500">
-          Messages are end-to-end encrypted and never stored
+          Messages are never stored
         </p>
         
       </div>

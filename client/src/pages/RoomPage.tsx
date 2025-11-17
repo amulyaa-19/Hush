@@ -48,6 +48,10 @@ const RoomPage = () => {
     });
     socketRef.current = newSocket;
 
+    newSocket.off("connect");
+    newSocket.off("new-message");
+    newSocket.off("update-user-list");
+
     newSocket.on("connect", () => {
       console.log("Socket connected, emitting join-room...");
       newSocket.emit("join-room", { roomId, username });

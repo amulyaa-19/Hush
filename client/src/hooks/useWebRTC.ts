@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Socket } from "socket.io-client";
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Socket } from 'socket.io-client';
 export interface IUser {
   id: string;
   username: string;
@@ -13,22 +13,23 @@ interface UseWebRTCOptions {
 const stunServers = {
   iceServers: [
     {
-      urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"],
+      urls: [
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+      ],
     },
   ],
 };
 
 export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<
-    Record<string, MediaStream>
-  >({});
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const peerConnectionsRef = useRef<Record<string, RTCPeerConnection>>({});
-
   const iceCandidateQueueRef = useRef<Record<string, RTCIceCandidate[]>>({});
 
   const startLocalStream = useCallback(async () => {
     console.log("Trying to start local stream...");
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setLocalStream(stream);
@@ -38,33 +39,39 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
     }
   }, []);
 
-  // Effect to send offers to new users
+  // Initiate calls to new users 
   useEffect(() => {
     if (!localStream || !socket || !mySocketId) {
       return;
     }
 
     users.forEach((user) => {
+      // Don't call ourselves or users we are already connected to
       if (user.id === mySocketId || peerConnectionsRef.current[user.id]) {
-        return; // Don't call ourselves or existing connections
+        return;
       }
+
+      console.log(`Initiating connection to ${user.username} (${user.id})`);
 
       const peerConnection = new RTCPeerConnection(stunServers);
       peerConnectionsRef.current[user.id] = peerConnection;
 
+      // Add local tracks
       localStream.getTracks().forEach((track) => {
         peerConnection.addTrack(track, localStream);
       });
 
+      // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-          socket.emit("webrtc-ice-candidate", {
+          socket.emit('webrtc-ice-candidate', {
             targetSocketId: user.id,
             candidate: event.candidate,
           });
         }
       };
 
+      // Handle incoming remote stream
       peerConnection.ontrack = (event) => {
         console.log(`Received remote track from ${user.id}`);
         setRemoteStreams((prevStreams) => ({
@@ -73,11 +80,11 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
         }));
       };
 
-      peerConnection
-        .createOffer()
+      // Create and send offer
+      peerConnection.createOffer()
         .then((offer) => peerConnection.setLocalDescription(offer))
         .then(() => {
-          socket.emit("webrtc-offer", {
+          socket.emit('webrtc-offer', {
             targetSocketId: user.id,
             offer: peerConnection.localDescription,
           });
@@ -85,9 +92,10 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
         })
         .catch((error) => console.error("Error creating offer:", error));
     });
+
   }, [localStream, users, socket, mySocketId]);
 
-  // Effect to handle all incoming socket events
+  // Handle incoming signaling (Offer, Answer, ICE)
   useEffect(() => {
     if (!socket || !localStream || !mySocketId) {
       return;
@@ -98,24 +106,22 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
       if (peerConnection && iceCandidateQueueRef.current[socketId]) {
         console.log(`Processing queued candidates for ${socketId}`);
         iceCandidateQueueRef.current[socketId].forEach((candidate) => {
-          peerConnection
-            .addIceCandidate(candidate)
-            .catch((e) =>
-              console.error("Error adding queued ICE candidate:", e)
-            );
+          peerConnection.addIceCandidate(candidate)
+            .catch((e) => console.error("Error adding queued ICE candidate:", e));
         });
-        delete iceCandidateQueueRef.current[socketId];
+        delete iceCandidateQueueRef.current[socketId]; 
       }
     };
 
-    socket.on("webrtc-offer", (data) => {
+    const handleOffer = (data: { senderSocketId: string, offer: RTCSessionDescriptionInit }) => {
       const { senderSocketId, offer } = data;
       console.log(`Received offer from ${senderSocketId}`);
 
+      // Glare handling: If we are already connecting to this person, check who wins
       const existingConnection = peerConnectionsRef.current[senderSocketId];
       if (existingConnection && existingConnection.signalingState !== 'stable') {
-        console.warn(`Glare condition detected! Ignoring offer from ${senderSocketId}`);
-        return; // We are already making an offer, so we will ignore this one.
+        console.warn(`Glare condition detected with ${senderSocketId}. Ignoring offer.`);
+        return; 
       }
 
       const peerConnection = new RTCPeerConnection(stunServers);
@@ -127,7 +133,7 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-          socket.emit("webrtc-ice-candidate", {
+          socket.emit('webrtc-ice-candidate', {
             targetSocketId: senderSocketId,
             candidate: event.candidate,
           });
@@ -142,77 +148,75 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
         }));
       };
 
-      peerConnection
-        .setRemoteDescription(offer)
+      peerConnection.setRemoteDescription(offer)
         .then(() => peerConnection.createAnswer())
         .then((answer) => peerConnection.setLocalDescription(answer))
         .then(() => {
-          socket.emit("webrtc-answer", {
+          socket.emit('webrtc-answer', {
             targetSocketId: senderSocketId,
             answer: peerConnection.localDescription,
           });
           console.log(`Sent answer to ${senderSocketId}`);
-          processQueuedCandidates(senderSocketId); // Process queue after setting description
+          processQueuedCandidates(senderSocketId);
         })
         .catch((error) => console.error("Error handling offer:", error));
-    });
+    };
 
-    socket.on("webrtc-answer", (data) => {
+    const handleAnswer = (data: { senderSocketId: string, answer: RTCSessionDescriptionInit }) => {
       const { senderSocketId, answer } = data;
       console.log(`Received answer from ${senderSocketId}`);
 
       const peerConnection = peerConnectionsRef.current[senderSocketId];
       if (peerConnection) {
-        peerConnection
-          .setRemoteDescription(answer)
+        peerConnection.setRemoteDescription(answer)
           .then(() => {
-            processQueuedCandidates(senderSocketId); // Process queue after setting description
+            processQueuedCandidates(senderSocketId);
           })
-          .catch((error) =>
-            console.error("Error setting remote description:", error)
-          );
+          .catch((error) => console.error("Error setting remote description:", error));
       }
-    });
+    };
 
-    socket.on("webrtc-ice-candidate", (data) => {
+    const handleIceCandidate = (data: { senderSocketId: string, candidate: RTCIceCandidateInit }) => {
       const { senderSocketId, candidate } = data;
-      console.log(`Received ICE candidate from ${senderSocketId}`);
-
+      
       const peerConnection = peerConnectionsRef.current[senderSocketId];
 
       if (peerConnection && peerConnection.remoteDescription) {
-        // If connection is ready, add candidate
-        peerConnection
-          .addIceCandidate(new RTCIceCandidate(candidate))
-          .catch((error) =>
-            console.error("Error adding received ICE candidate:", error)
-          );
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+          .catch((error) => console.error("Error adding received ICE candidate:", error));
       } else {
-        // If not ready, add to queue
-        console.log(`Queuing candidate from ${senderSocketId}`);
+        // Queue the candidate if the connection isn't ready
         if (!iceCandidateQueueRef.current[senderSocketId]) {
           iceCandidateQueueRef.current[senderSocketId] = [];
         }
-        iceCandidateQueueRef.current[senderSocketId].push(
-          new RTCIceCandidate(candidate)
-        );
+        iceCandidateQueueRef.current[senderSocketId].push(new RTCIceCandidate(candidate));
       }
-    });
+    };
+
+    socket.on('webrtc-offer', handleOffer);
+    socket.on('webrtc-answer', handleAnswer);
+    socket.on('webrtc-ice-candidate', handleIceCandidate);
+
+    // Cleanup Function beacuse sometimes two users were showing
+    return () => {
+      socket.off('webrtc-offer', handleOffer);
+      socket.off('webrtc-answer', handleAnswer);
+      socket.off('webrtc-ice-candidate', handleIceCandidate);
+    };
+
   }, [socket, localStream, mySocketId]);
 
+  // cleanup connections when users leave 
   useEffect(() => {
     const allConnectionIds = Object.keys(peerConnectionsRef.current);
     const allUserIds = users.map(user => user.id);
+
     allConnectionIds.forEach((connId) => {
-      // If a connection ID is NOT in the new user list, that user left.
       if (!allUserIds.includes(connId)) {
-        
         console.log(`Cleaning up connection for ${connId}`);
-      
         peerConnectionsRef.current[connId].close();
-        
         delete peerConnectionsRef.current[connId];
-      
+        
         setRemoteStreams((prevStreams) => {
           const newStreams = { ...prevStreams };
           delete newStreams[connId];
@@ -220,7 +224,6 @@ export const useWebRTC = ({ socket, users, mySocketId }: UseWebRTCOptions) => {
         });
       }
     });
-
   }, [users]);
 
   return {
